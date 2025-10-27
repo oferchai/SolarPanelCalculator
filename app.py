@@ -138,41 +138,42 @@ def main():
     # Sidebar filters
     st.sidebar.header("📊 Filters")
     
-    # Date range filter - convert to datetime.date if needed
-    min_date = df['date'].min()
-    max_date = df['date'].max()
+    # Date range filter
+    # Convert pandas dates to Python datetime.date objects
+    import datetime as dt
     
-    # Ensure they're datetime.date objects
-    if not isinstance(min_date, pd.Timestamp):
-        from datetime import datetime
-        if isinstance(min_date, str):
-            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
-        elif hasattr(min_date, 'date'):
-            min_date = min_date.date()
+    min_date = pd.Timestamp(df['date'].min()).date() if isinstance(df['date'].min(), pd.Timestamp) else df['date'].min()
+    max_date = pd.Timestamp(df['date'].max()).date() if isinstance(df['date'].max(), pd.Timestamp) else df['date'].max()
     
-    if not isinstance(max_date, pd.Timestamp):
-        from datetime import datetime
-        if isinstance(max_date, str):
-            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
-        elif hasattr(max_date, 'date'):
-            max_date = max_date.date()
+    # Ensure we have proper datetime.date objects
+    if not isinstance(min_date, dt.date):
+        min_date = dt.date(2024, 12, 31)
+    if not isinstance(max_date, dt.date):
+        max_date = dt.date(2025, 9, 30)
+    
+    # Set default start date to 2025-01-01
+    default_start_date = dt.date(2025, 1, 1)
     
     st.sidebar.markdown("**Select Date Range:**")
+    st.sidebar.info(f"Data available from {min_date} to {max_date}")
     
+    # Use format parameter to ensure proper display
     start_date = st.sidebar.date_input(
         "Start Date",
-        value=min_date,
+        value=default_start_date,
         min_value=min_date,
         max_value=max_date,
-        key="start_date"
+        key="start_date",
+        format="YYYY-MM-DD"
     )
     
     end_date = st.sidebar.date_input(
         "End Date",
         value=max_date,
-        min_value=start_date if start_date else min_date,
+        min_value=min_date,
         max_value=max_date,
-        key="end_date"
+        key="end_date",
+        format="YYYY-MM-DD"
     )
     
     # Filter data based on selection
