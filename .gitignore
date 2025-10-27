@@ -1,5 +1,4 @@
 # Python
-venv/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,7 +19,11 @@ build/
 .DS_Store
 Thumbs.db
 
-# Analysis outputs (optional - uncomment if you don't want to track these)
-# *.png
-# *.csv
-# analysis_results.txt
+# Data files (large CSV files not tracked in git)
+inverter_data*.csv
+prices_data*.csv
+
+# Analysis outputs
+*.png
+monthly_savings_summary.csv
+analysis_results.txt
