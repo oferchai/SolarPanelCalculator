@@ -141,17 +141,34 @@ def main():
     # Date range filter
     min_date = df['date'].min()
     max_date = df['date'].max()
-    date_range = st.sidebar.date_input(
-        "Select Date Range",
-        value=(min_date, max_date),
-        min_value=min_date,
-        max_value=max_date
-    )
+    
+    st.sidebar.markdown("**Select Date Range:**")
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        start_date = st.date_input(
+            "Start Date",
+            value=min_date,
+            min_value=min_date,
+            max_value=max_date,
+            key="start_date"
+        )
+    with col2:
+        end_date = st.date_input(
+            "End Date",
+            value=max_date,
+            min_value=min_date,
+            max_value=max_date,
+            key="end_date"
+        )
     
     # Filter data based on selection
-    if len(date_range) == 2:
-        mask = (df['date'] >= date_range[0]) & (df['date'] <= date_range[1])
-        filtered_df = df[mask]
+    if start_date and end_date:
+        if start_date > end_date:
+            st.sidebar.error("Start date must be before end date!")
+            filtered_df = df
+        else:
+            mask = (df['date'] >= start_date) & (df['date'] <= end_date)
+            filtered_df = df[mask]
     else:
         filtered_df = df
     
@@ -227,7 +244,7 @@ def main():
                 yaxis_title="Savings (DKK)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             # Cumulative savings
@@ -247,7 +264,7 @@ def main():
                 yaxis_title="Cumulative Savings (DKK)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         # Cost comparison
         st.markdown("### Cost Comparison")
@@ -293,7 +310,7 @@ def main():
                 barmode='group',
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         with col2:
             # Self-sufficiency rate
@@ -313,7 +330,7 @@ def main():
                 yaxis_title="Self-Sufficiency (%)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         # Daily pattern
         st.markdown("### Daily Energy Pattern (Average by Hour)")
@@ -331,7 +348,7 @@ def main():
             yaxis_title="Power (Wh)",
             hovermode='x unified'
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     with tab3:
         st.markdown('<div class="sub-header">Monthly Performance</div>', unsafe_allow_html=True)
@@ -351,7 +368,7 @@ def main():
             elif 'Price' in col:
                 display_df[col] = display_df[col].apply(lambda x: f"{x:.3f}")
         
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        st.dataframe(display_df, width="stretch", hide_index=True)
         
         # Download button
         csv = monthly_summary.to_csv(index=False)
@@ -382,7 +399,7 @@ def main():
                 hole=.3
             )])
             fig.update_layout(title="Savings Sources Breakdown")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
             
             st.markdown(f"""
             **Savings Breakdown:**
@@ -408,7 +425,7 @@ def main():
                 yaxis_title="Price (DKK/kWh)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         
         # Export statistics
         st.markdown("### Export Statistics")
