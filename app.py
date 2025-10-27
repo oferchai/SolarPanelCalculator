@@ -324,13 +324,15 @@ def main():
     if not isinstance(max_date, dt.date):
         max_date = dt.date(2025, 9, 30)
     
-    # Set default start date to 2025-01-01
-    default_start_date = dt.date(2025, 1, 1)
+    # Set default start date to 2025-01-01 (but this can be changed by user)
+    # If user wants to see all data including Dec 2024, they can adjust
+    default_start_date = min_date  # Changed to min_date to allow full range
     
     st.sidebar.markdown("**Select Date Range:**")
     st.sidebar.info(f"Data available from {min_date} to {max_date}")
     
     # Use format parameter to ensure proper display
+    # Note: Start date defaults to data minimum to ensure full range is selectable
     start_date = st.sidebar.date_input(
         "Start Date",
         value=default_start_date,
@@ -340,10 +342,11 @@ def main():
         format="YYYY-MM-DD"
     )
     
+    # End date min_value should be at least the start_date (if selected)
     end_date = st.sidebar.date_input(
         "End Date",
         value=max_date,
-        min_value=min_date,
+        min_value=start_date if start_date else min_date,
         max_value=max_date,
         key="end_date",
         format="YYYY-MM-DD"
