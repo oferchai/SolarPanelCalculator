@@ -508,7 +508,7 @@ def main():
                 yaxis_title="Savings (DKK)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             # Cumulative savings
@@ -528,7 +528,7 @@ def main():
                 yaxis_title="Cumulative Savings (DKK)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         
         # Cost comparison
         st.markdown("### Cost Comparison")
@@ -574,7 +574,7 @@ def main():
                 barmode='group',
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             # Self-sufficiency rate
@@ -594,7 +594,7 @@ def main():
                 yaxis_title="Self-Sufficiency (%)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         
         # Daily pattern
         st.markdown("### Daily Energy Pattern (Average by Hour)")
@@ -612,7 +612,7 @@ def main():
             yaxis_title="Power (Wh)",
             hovermode='x unified'
         )
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
     
     with tab3:
         st.markdown('<div class="sub-header">Monthly Performance</div>', unsafe_allow_html=True)
@@ -663,7 +663,7 @@ def main():
                 hole=.3
             )])
             fig.update_layout(title="Savings Sources Breakdown")
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
             
             st.markdown(f"""
             **Savings Breakdown:**
@@ -689,7 +689,7 @@ def main():
                 yaxis_title="Price (DKK/kWh)",
                 hovermode='x unified'
             )
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         
         # Export statistics
         st.markdown("### Export Statistics")
