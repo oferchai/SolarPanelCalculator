@@ -2,6 +2,21 @@
 
 This project analyzes solar panel system performance and calculates capital savings by comparing actual costs with hypothetical grid-only costs.
 
+## Features
+
+### Interactive Dashboard (Streamlit)
+- 📊 Real-time data visualization with Plotly
+- 💰 Comprehensive savings analysis
+- ⚡ Energy flow monitoring
+- 📈 Monthly performance breakdown
+- 🔍 Detailed analytics with export statistics
+- 📥 Downloadable reports
+
+### Command-Line Analysis
+- Detailed console output with monthly breakdowns
+- Static chart generation (PNG files)
+- CSV export for further analysis
+
 ## Overview
 
 The analysis provides detailed insights into:
@@ -38,7 +53,33 @@ For the period January - September 2025:
 - **Monthly Average**: 504.82 DKK/month
 - **Annual Projection**: 6,057.88 DKK/year
 
-## Usage
+## Installation & Usage
+
+### Option 1: Using Poetry (Recommended)
+
+1. Install Poetry if you haven't already:
+   ```bash
+   curl -sSL https://install.python-poetry.org | python3 -
+   ```
+
+2. Install dependencies:
+   ```bash
+   cd SolarPanelAnalysis
+   poetry install
+   ```
+
+3. Run the interactive dashboard:
+   ```bash
+   poetry run streamlit run app.py
+   ```
+   The dashboard will open in your browser at `http://localhost:8501`
+
+4. Or run the command-line analysis:
+   ```bash
+   poetry run python calculate_savings.py
+   ```
+
+### Option 2: Using pip/venv
 
 1. Set up Python virtual environment:
    ```bash
@@ -48,41 +89,86 @@ For the period January - September 2025:
 
 2. Install dependencies:
    ```bash
-   pip install pandas matplotlib seaborn numpy
+   pip install -r requirements.txt
    ```
 
 3. Place your data files in the project directory:
    - `inverter_data_*.csv`
    - `prices_data_*.csv`
 
-4. Run the analysis:
+4. Run the Streamlit dashboard:
+   ```bash
+   streamlit run app.py
+   ```
+
+5. Or run the command-line analysis:
    ```bash
    python calculate_savings.py
    ```
 
 ## Output Files
 
+### Interactive Dashboard
+- Real-time interactive charts and metrics
+- Filterable date ranges
+- Downloadable CSV reports
+
+### Command-Line Analysis
 - `monthly_savings_summary.csv` - Detailed monthly data
 - `solar_savings_analysis.png` - 6 comprehensive charts
 - `solar_cost_breakdown.png` - 5 detailed breakdown charts
 
-## Charts Generated
+## Dashboard Features
 
-### solar_savings_analysis.png
-1. Monthly savings bar chart
-2. Cumulative savings over time
-3. Total cost comparison (with vs without solar)
-4. Monthly energy flow
-5. Self-sufficiency rate by month
-6. Savings rate by month
+### Tabs Overview
 
-### solar_cost_breakdown.png
-1. Monthly cost comparison
-2. Average grid purchase prices
-3. Energy consumption breakdown
-4. Savings sources pie chart
-5. Monthly breakdown: Self-sufficiency vs export revenue
+1. **💰 Savings Analysis**
+   - Monthly and cumulative savings charts
+   - Cost comparison visualizations
+   - Savings rate trends
+
+2. **⚡ Energy Flow**
+   - Monthly energy flow breakdown
+   - Self-sufficiency rate tracking
+   - Hourly energy patterns
+
+3. **📊 Monthly Breakdown**
+   - Detailed monthly performance table
+   - Downloadable CSV reports
+   - Key metrics comparison
+
+4. **🔍 Detailed View**
+   - Savings sources breakdown
+   - Price trends analysis
+   - Export statistics
+
+## Technology Stack
+
+- **Python 3.9+**
+- **Streamlit** - Interactive web dashboard
+- **Plotly** - Interactive visualizations
+- **Pandas** - Data processing
+- **NumPy** - Numerical computations
+- **Matplotlib/Seaborn** - Static charts (CLI version)
+
+## Project Structure
+
+```
+SolarPanelAnalysis/
+├── app.py                  # Streamlit dashboard application
+├── calculate_savings.py    # Command-line analysis script
+├── pyproject.toml          # Poetry dependency management
+├── requirements.txt        # Pip requirements
+├── README.md              # This file
+├── .gitignore            # Git ignore rules
+└── data files (*.csv)    # Your solar panel data
+```
 
 ## License
 
 This project is for personal use and analysis.
+
+## Contributing
+
+Feel free to open issues or submit pull requests for improvements!
+
