@@ -172,6 +172,96 @@ def calculate_monthly_summary(df):
     
     return monthly
 
+def simulate_battery_scenario(df, capacity_multiplier, current_capacity=7.2):
+    """
+    Simulate different battery capacity and recalculate energy flows
+    
+    Parameters:
+    - df: DataFrame with energy data
+    - capacity_multiplier: float, multiplier for battery capacity (e.g., 1.5 = 50% bigger)
+    - current_capacity: float, current battery capacity in kWh (default 7.2)
+    
+    Logic:
+    1. When battery is full (SOC > 90%) and exporting, store excess in virtual larger battery
+    2. When importing from grid at high prices, use stored energy instead
+    3. Recalculate costs based on new energy flows
+    """
+    
+    df_scenario = df.copy()
+    
+    new_capacity = current_capacity * capacity_multiplier
+    capacity_increase_kwh = new_capacity - current_capacity
+    
+    # Track virtual battery state (extra capacity beyond physical battery)
+    virtual_battery_kwh = 0  # Energy stored in the "extra" capacity
+    max_virtual_capacity = capacity_increase_kwh
+    
+    # Statistics for reporting
+    total_extra_stored = 0
+    total_grid_avoided = 0
+    
+    for idx in df_scenario.index:
+        soc = df_scenario.loc[idx, 'soc']
+        export_kwh = df_scenario.loc[idx, 'grid_export_kwh']
+        import_kwh = df_scenario.loc[idx, 'grid_import_kwh']
+        purchase_price = df_scenario.loc[idx, 'purchase_price']
+        
+        # CHARGING PHASE: If battery is near full and exporting, store in virtual battery
+        if capacity_multiplier > 1.0 and soc > 0.85 and export_kwh > 0:
+            # Available space in virtual battery
+            available_space = max_virtual_capacity - virtual_battery_kwh
+            
+            if available_space > 0:
+                # How much can we store? Limited by export and available space
+                storable = min(export_kwh, available_space)
+                
+                # Store it
+                virtual_battery_kwh += storable
+                total_extra_stored += storable
+                
+                # Update flows: reduce export, increase battery charge
+                df_scenario.loc[idx, 'grid_export_kwh'] -= storable
+                df_scenario.loc[idx, 'battery_charge_kwh'] += storable
+        
+        # DISCHARGING PHASE: If importing from grid and have stored energy, use it
+        if import_kwh > 0 and virtual_battery_kwh > 0:
+            # How much can we discharge? Limited by import need and stored energy
+            dischargeable = min(import_kwh, virtual_battery_kwh)
+            
+            # Use stored energy
+            virtual_battery_kwh -= dischargeable
+            total_grid_avoided += dischargeable
+            
+            # Update flows: reduce import, increase battery discharge
+            df_scenario.loc[idx, 'grid_import_kwh'] -= dischargeable
+            df_scenario.loc[idx, 'battery_discharge_kwh'] += dischargeable
+        
+        # SMALLER BATTERY: Reduce charging capability
+        if capacity_multiplier < 1.0 and soc < 0.15:
+            # If battery is small and nearly empty, can't discharge as much
+            discharge_reduction = df_scenario.loc[idx, 'battery_discharge_kwh'] * (1 - capacity_multiplier)
+            
+            if discharge_reduction > 0:
+                df_scenario.loc[idx, 'battery_discharge_kwh'] -= discharge_reduction
+                df_scenario.loc[idx, 'grid_import_kwh'] += discharge_reduction
+    
+    # Recalculate costs with new energy flows
+    df_scenario['actual_cost'] = (
+        df_scenario['grid_import_kwh'] * df_scenario['purchase_price']
+    ) - (
+        df_scenario['grid_export_kwh'] * df_scenario['sell_price_adjusted']
+    )
+    df_scenario['savings'] = df_scenario['hypothetical_cost'] - df_scenario['actual_cost']
+    
+    # Add scenario metadata
+    scenario_stats = {
+        'total_extra_stored': total_extra_stored,
+        'total_grid_avoided': total_grid_avoided,
+        'final_virtual_charge': virtual_battery_kwh
+    }
+    
+    return df_scenario, scenario_stats
+
 def main():
     # Header
     st.markdown('<div class="main-header">☀️ Solar Panel Analysis Dashboard</div>', unsafe_allow_html=True)
@@ -270,6 +360,54 @@ def main():
     else:
         filtered_df = df
     
+    st.sidebar.markdown("---")
+    
+    # What-If Scenario Section
+    with st.sidebar.expander("🎯 What-If Scenarios", expanded=False):
+        st.markdown("### Battery Size Simulation")
+        
+        current_battery_capacity = 7.2  # kWh
+        
+        battery_multiplier = st.slider(
+            "Battery Capacity Multiplier",
+            min_value=0.5,
+            max_value=3.0,
+            value=1.0,
+            step=0.1,
+            format="%.1fx",
+            help="Simulate a larger or smaller battery. 1.0x = current size (7.2 kWh)",
+            key="battery_multiplier"
+        )
+        
+        new_capacity = current_battery_capacity * battery_multiplier
+        capacity_change = new_capacity - current_battery_capacity
+        
+        st.info(f"""
+        **Current Battery:** {current_battery_capacity:.1f} kWh  
+        **Scenario Battery:** {new_capacity:.1f} kWh  
+        **Change:** {capacity_change:+.1f} kWh ({(battery_multiplier - 1) * 100:+.0f}%)
+        """)
+        
+        scenario_enabled = st.checkbox(
+            "Apply Scenario to Dashboard", 
+            value=False,
+            help="Enable to see how a different battery size would affect your savings"
+        )
+        
+        if battery_multiplier != 1.0:
+            st.caption("💡 Tip: Enable the scenario to see the impact on all charts and metrics!")
+    
+    # Apply scenario if enabled
+    if scenario_enabled and battery_multiplier != 1.0:
+        with st.spinner("Calculating battery scenario..."):
+            filtered_df, scenario_stats = simulate_battery_scenario(
+                filtered_df, 
+                battery_multiplier, 
+                current_battery_capacity
+            )
+    else:
+        scenario_stats = None
+    
     # Calculate metrics
     monthly_summary = calculate_monthly_summary(filtered_df)
     
@@ -283,8 +421,33 @@ def main():
     savings_rate = (total_savings / total_hypothetical * 100) if total_hypothetical > 0 else 0
     self_sufficiency = ((total_consumption - total_grid_import) / total_consumption * 100) if total_consumption > 0 else 0
     
+    # Show scenario banner if active
+    if scenario_enabled and battery_multiplier != 1.0:
+        st.markdown(f"""
+        <div style='background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%); 
+                    padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; color: white;'>
+            <h3 style='margin: 0; display: flex; align-items: center;'>
+                🎯 Scenario Mode Active: {battery_multiplier:.1f}x Battery Size ({new_capacity:.1f} kWh)
+            </h3>
+            <p style='margin: 0.5rem 0 0 0; opacity: 0.9;'>
+                All metrics and charts below reflect the simulated battery capacity.
+                Extra energy stored: {scenario_stats['total_extra_stored']:.1f} kWh | 
+                Grid imports avoided: {scenario_stats['total_grid_avoided']:.1f} kWh
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Key Metrics
     st.markdown('<div class="sub-header">📈 Key Performance Indicators</div>', unsafe_allow_html=True)
+    
+    # Show comparison if scenario is active
+    if scenario_enabled and battery_multiplier != 1.0:
+        st.info(f"""
+        **💡 Scenario Impact Summary:**  
+        These metrics show the performance with a **{new_capacity:.1f} kWh battery** 
+        (vs current {current_battery_capacity:.1f} kWh).
+        Disable scenario in sidebar to see actual performance.
+        """)
     
     col1, col2, col3, col4 = st.columns(4)
     
