@@ -138,28 +138,42 @@ def main():
     # Sidebar filters
     st.sidebar.header("📊 Filters")
     
-    # Date range filter
+    # Date range filter - convert to datetime.date if needed
     min_date = df['date'].min()
     max_date = df['date'].max()
     
+    # Ensure they're datetime.date objects
+    if not isinstance(min_date, pd.Timestamp):
+        from datetime import datetime
+        if isinstance(min_date, str):
+            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
+        elif hasattr(min_date, 'date'):
+            min_date = min_date.date()
+    
+    if not isinstance(max_date, pd.Timestamp):
+        from datetime import datetime
+        if isinstance(max_date, str):
+            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
+        elif hasattr(max_date, 'date'):
+            max_date = max_date.date()
+    
     st.sidebar.markdown("**Select Date Range:**")
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        start_date = st.date_input(
-            "Start Date",
-            value=min_date,
-            min_value=min_date,
-            max_value=max_date,
-            key="start_date"
-        )
-    with col2:
-        end_date = st.date_input(
-            "End Date",
-            value=max_date,
-            min_value=min_date,
-            max_value=max_date,
-            key="end_date"
-        )
+    
+    start_date = st.sidebar.date_input(
+        "Start Date",
+        value=min_date,
+        min_value=min_date,
+        max_value=max_date,
+        key="start_date"
+    )
+    
+    end_date = st.sidebar.date_input(
+        "End Date",
+        value=max_date,
+        min_value=start_date if start_date else min_date,
+        max_value=max_date,
+        key="end_date"
+    )
     
     # Filter data based on selection
     if start_date and end_date:
