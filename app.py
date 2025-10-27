@@ -54,16 +54,66 @@ st.markdown("""
 
 @st.cache_data
 def load_data():
-    """Load and process solar panel data"""
+    """Load and process solar panel data from all matching CSV files"""
+    import glob
+    import os
+    
+    loaded_files = {
+        'inverter': [],
+        'prices': []
+    }
+    
     try:
-        # Load inverter data
-        inverter_df = pd.read_csv('inverter_data_2025-01-01T00_00_00_to_2025-09-30T23_59_59.csv')
-        inverter_df['time'] = pd.to_datetime(inverter_df['time'])
+        # Find all matching CSV files
+        inverter_files = sorted(glob.glob('inverter_data*.csv'))
+        price_files = sorted(glob.glob('prices_data*.csv'))
         
-        # Load pricing data
-        prices_df = pd.read_csv('prices_data_2025-01-01T00_00_00_to_2025-09-30T23_59_59.csv')
-        prices_df['valid_from'] = pd.to_datetime(prices_df['valid_from'])
-        prices_df['valid_to'] = pd.to_datetime(prices_df['valid_to'])
+        if not inverter_files:
+            st.error("No inverter data files found (inverter_data*.csv)")
+            return None, loaded_files
+        
+        if not price_files:
+            st.error("No price data files found (prices_data*.csv)")
+            return None, loaded_files
+        
+        # Load all inverter data files
+        inverter_dfs = []
+        for file in inverter_files:
+            try:
+                df = pd.read_csv(file)
+                df['time'] = pd.to_datetime(df['time'])
+                inverter_dfs.append(df)
+                loaded_files['inverter'].append(file)
+            except Exception as e:
+                st.warning(f"Error loading {file}: {str(e)}")
+        
+        if not inverter_dfs:
+            st.error("No inverter data could be loaded")
+            return None, loaded_files
+        
+        # Combine all inverter data
+        inverter_df = pd.concat(inverter_dfs, ignore_index=True)
+        inverter_df = inverter_df.sort_values('time').reset_index(drop=True)
+        
+        # Load all price data files
+        price_dfs = []
+        for file in price_files:
+            try:
+                df = pd.read_csv(file)
+                df['valid_from'] = pd.to_datetime(df['valid_from'])
+                df['valid_to'] = pd.to_datetime(df['valid_to'])
+                price_dfs.append(df)
+                loaded_files['prices'].append(file)
+            except Exception as e:
+                st.warning(f"Error loading {file}: {str(e)}")
+        
+        if not price_dfs:
+            st.error("No price data could be loaded")
+            return None, loaded_files
+        
+        # Combine all price data
+        prices_df = pd.concat(price_dfs, ignore_index=True)
+        prices_df = prices_df.sort_values('valid_from').reset_index(drop=True)
         
         # Merge data
         inverter_df['price_match'] = inverter_df['time'].dt.floor('h')
@@ -98,10 +148,10 @@ def load_data():
         merged_df['date'] = merged_df['time'].dt.date
         merged_df['hour'] = merged_df['time'].dt.hour
         
-        return merged_df
+        return merged_df, loaded_files
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
-        return None
+        return None, loaded_files
 
 def calculate_monthly_summary(df):
     """Calculate monthly aggregated metrics"""
@@ -129,11 +179,44 @@ def main():
     
     # Load data
     with st.spinner("Loading data..."):
-        df = load_data()
+        df, loaded_files = load_data()
     
     if df is None:
         st.error("Failed to load data. Please ensure CSV files are in the correct location.")
         return
+    
+    # Display loaded files notification
+    with st.expander("📁 Loaded Data Files", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Inverter Data Files:**")
+            if loaded_files['inverter']:
+                for file in loaded_files['inverter']:
+                    st.success(f"✓ {file}")
+            else:
+                st.warning("No inverter files loaded")
+        
+        with col2:
+            st.markdown("**Price Data Files:**")
+            if loaded_files['prices']:
+                for file in loaded_files['prices']:
+                    st.success(f"✓ {file}")
+            else:
+                st.warning("No price files loaded")
+        
+        # Show data summary
+        st.markdown("---")
+        st.markdown("**Data Summary:**")
+        st.info(f"""
+        - Total records: {len(df):,}
+        - Date range: {df['date'].min()} to {df['date'].max()}
+        - Duration: {(df['date'].max() - df['date'].min()).days} days
+        - Inverter files: {len(loaded_files['inverter'])}
+        - Price files: {len(loaded_files['prices'])}
+        """)
+    
+    st.markdown("---")
     
     # Sidebar filters
     st.sidebar.header("📊 Filters")

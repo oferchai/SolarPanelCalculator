@@ -11,6 +11,8 @@ This project analyzes solar panel system performance and calculates capital savi
 - 📈 Monthly performance breakdown
 - 🔍 Detailed analytics with export statistics
 - 📥 Downloadable reports
+- 📁 **Automatic multi-file loading** - Loads all `inverter_data*.csv` and `prices_data*.csv` files
+- 🔔 **File processing notifications** - Shows which files have been loaded
 
 ### Command-Line Analysis
 - Detailed console output with monthly breakdowns
